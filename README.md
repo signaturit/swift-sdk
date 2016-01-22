@@ -1,7 +1,3 @@
-========================
-DO NOT USE MASTER BRANCH
-========================
-
 Signaturit Swift SDK
 ====================
 This package is a Swift wrapper around the Signaturit API. If you didn't read the documentation yet, maybe it's time to take a look [here](https://docs.signaturit.com/).
@@ -18,14 +14,14 @@ platform :ios, '8.0'
 use_frameworks!
 
 target 'MyApp' do
-    pod 'Signaturit', :git => 'https://github.com/Signaturit/swift-sdk.git'
+    pod 'Signaturit'
 end
 ```
 
 Please note that by default the client will use our sandbox API. When you are ready to start using the production environment just get the correct access token and pass an additional argument to the constructor:
 
 ```swift
-let client: Signaturit = Signaturit(accessToken: "YOUR_ACCESS_TOKEN")
+let Signaturit = Signaturit(accessToken: "YOUR_ACCESS_TOKEN")
 ```
 
 Examples
@@ -89,10 +85,6 @@ Create a new signature request. You can check all signature [params](https://doc
 let file       = NSBundle.mainBundle().URLForResource("Document", withExtension: "pdf")
 let recipients = [["email": "john.doe@example.com", "name": "John Doe"]]
 let params     = ["subject": "Receipt no. 250", "body": "Please sign the receipt"]
-
-$filePath   = "/documents/contracts/receipt250.pdf";
-$recipients = ["email" => "john.doe@example.com", "name" => "John Doe"];
-$options    = ["subject" => "Receipt no. 250", "body" => "Please sign the receipt"];
 
 client.createSignature([file], recipients: recipients, params: params, successHandler: { response in
     print(response)
