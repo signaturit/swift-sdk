@@ -56,16 +56,6 @@ public class Signaturit {
         return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/signatures/count.json", headers: self.headers, parameters: conditions)
     }
 
-    /// Get signature document.
-    public func getSignatureDocument(signatureId: String, documentId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/signatures/\(signatureId)/documents/\(documentId).json", headers: self.headers)
-    }
-
-    /// Get signature documents.
-    public func getSignatureDocuments(signatureId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/signatures/\(signatureId)/documents.json", headers: self.headers)
-    }
-
     /// Download the audit trail.
     public func downloadAuditTrail(signatureId: String, documentId: String, path: Request.DownloadFileDestination) -> Request {
         return Alamofire.download(Alamofire.Method.GET, self.url + "/v3/signatures/" + signatureId + "/documents/" + documentId + "/download/doc_proof", headers: self.headers, destination: path)
