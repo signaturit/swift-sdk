@@ -1,0 +1,6 @@
+framework module Signaturit {
+  umbrella header "Signaturit-umbrella.h"
+
+  export *
+  module * { export * }
+}
