@@ -40,12 +40,7 @@ class ViewController: UIViewController {
         let params     = ["delivery_type": "url"]
 
         let client: Signaturit = Signaturit(accessToken: "NGFhOWE3MjAwNThlMjY5M2M1MzQxZjNlOTY1M2U0MzhmNTlmMWE1NzIyMTdmMGQwYTkzZDBjOTg4YzZlMGY1NA", production: false)
-/*
-        client.getSignatureDocument("df21653b-c080-11e5-bf87-0a0f5351f1ad", documentId: "df4e9c2f-c080-11e5-bf87-0a0f5351f1ad").responseJSON { response in
-            print(response)
-        }
-*/
-/*
+
         client.createSignature([uploadPDF!], recipients: recipients, params: params, successHandler: { response in
             UIView.animateWithDuration(0.3, animations: { () -> Void in
                 self.activityIndicator.alpha = 0
@@ -62,7 +57,6 @@ class ViewController: UIViewController {
                 )
             )
         })
-*/
     }
 }
 
