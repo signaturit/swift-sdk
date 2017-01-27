@@ -255,17 +255,7 @@ public class Signaturit {
         return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/sms/\(smsId).json", headers: self.headers)
     }
     
-    /// Get sms certificates information.
-    public func getSMSCertificates(smsId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/sms/\(smsId)/certificates.json", headers: self.headers)
-    }
-    
-    /// Get email certificate information.
-    public func getSMSCertificate(smsId: String, certificateId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/sms/\(smsId)/certificates/\(certificateId).json", headers: self.headers)
-    }
-    
-    /// Create a email.
+    /// Create an sms.
     public func createSMS(files: [NSURL], recipients: [Dictionary<String, String>], body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: Response<AnyObject, NSError>? -> Void) {
         return Alamofire.upload(.POST, self.url + "/v3/sms.json", headers: self.headers, multipartFormData: { multipartFormData in
             if body != nil {
