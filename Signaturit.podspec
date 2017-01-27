@@ -13,5 +13,5 @@ Pod::Spec.new do |s|
 
   s.source_files = '*'
 
-  s.dependency 'Alamofire', '~> 3.0.0-beta.3'
+  s.dependency 'Alamofire', '~> 3.5'
 end
