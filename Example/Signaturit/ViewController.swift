@@ -26,23 +26,23 @@ class ViewController: UIViewController {
         super.didReceiveMemoryWarning()
     }
 
-    @IBAction func openSignaturit(sender: AnyObject) {
-        send()
+    @IBAction func send() {
+        _send()
     }
 
-    internal func send() {
+    internal func _send() {
         button.alpha            = 0
         activityIndicator.alpha = 1
         webView.alpha           = 0.5
 
-        let uploadPDF  = NSBundle.mainBundle().URLForResource("Document", withExtension: "pdf")
+        let uploadPDF  = Bundle.main.url(forResource: "Document", withExtension: "pdf")
         let recipients = [["email": "api@signaturit.com", "fullname": "Signaturit"]]
-        let params     = ["delivery_type": "url"]
+        let params     = ["delivery_type": "url"] as Dictionary<String, AnyObject>
 
         let client: Signaturit = Signaturit(accessToken: "NGFhOWE3MjAwNThlMjY5M2M1MzQxZjNlOTY1M2U0MzhmNTlmMWE1NzIyMTdmMGQwYTkzZDBjOTg4YzZlMGY1NA", production: false)
-
-        client.createSignature([uploadPDF!], recipients: recipients, params: params, successHandler: { response in
-            UIView.animateWithDuration(0.3, animations: { () -> Void in
+        
+        client.createSignature(files: [uploadPDF!], recipients: recipients, params: params, successHandler: { response in
+            UIView.animate(withDuration: 0.3, animations: { () -> Void in
                 self.activityIndicator.alpha = 0
                 self.label.alpha             = 1
                 self.webView.alpha           = 1
@@ -52,8 +52,8 @@ class ViewController: UIViewController {
             let url       = signature["url"].stringValue
 
             self.webView.loadRequest(
-                NSURLRequest(
-                    URL: NSURL(string: url)!
+                URLRequest(
+                    url: URL(string: url)!
                 )
             )
         })

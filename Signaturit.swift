@@ -26,7 +26,7 @@ public class Signaturit {
 
         self.headers = [
             "Authorization": "Bearer " + accessToken,
-            "user-agent": "signaturit-swift-sdk 1.1.0"
+            "user-agent": "signaturit-swift-sdk 1.2.0"
         ]
 
     }
@@ -35,70 +35,73 @@ public class Signaturit {
 
     /// Get signature information.
     public func getSignature(signatureId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/signatures/\(signatureId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/signatures/\(signatureId).json", headers: self.headers)
     }
 
     /// Get signatures information.
-    public func getSignatures(limit: Int?, offset: Int?, var conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        conditions!["limit"]  = limit
-        conditions!["offset"] = offset
+    public func getSignatures(limit: Int, offset: Int, conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
+        var conditions = conditions
+        conditions!["limit"]  = limit as AnyObject
+        conditions!["offset"] = offset as AnyObject
 
-        return getSignatures(conditions!)
+        return getSignatures(conditions: conditions!)
     }
 
     /// Get signatures information.
     public func getSignatures(conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/signatures.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/signatures.json", method: .get, parameters: conditions, headers: self.headers)
     }
 
     /// Get signatures count.
-    public func countSignatures(conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/signatures/count.json", headers: self.headers, parameters: conditions)
+    public func countSignatures(conditions: [String: AnyObject]? = [String: AnyObject]()) -> DataRequest {
+        return Alamofire.request("\(self.url)/v3/signatures/count.json", method: .get, parameters: conditions, headers: self.headers)
     }
 
     /// Download the audit trail.
-    public func downloadAuditTrail(signatureId: String, documentId: String, path: Request.DownloadFileDestination) -> Request {
-        return Alamofire.download(Alamofire.Method.GET, self.url + "/v3/signatures/" + signatureId + "/documents/" + documentId + "/download/doc_proof", headers: self.headers, destination: path)
+    public func downloadAuditTrail(signatureId: String, documentId: String, path: DownloadRequest.DownloadFileDestination?) -> Request {
+        return Alamofire.download(self.url + "/v3/signatures/" + signatureId + "/documents/" + documentId + "/download/doc_proof", headers: self.headers, to: path)
     }
 
     /// Download the signed document.
-    public func downloadSignedDocument(signatureId: String, documentId: String, path: Request.DownloadFileDestination) -> Request {
-        return Alamofire.download(Alamofire.Method.GET, self.url + "/v3/signatures/" + signatureId + "/documents/" + documentId + "/download/signed", headers: self.headers, destination: path)
+    public func downloadSignedDocument(signatureId: String, documentId: String, path: DownloadRequest.DownloadFileDestination?) -> Request {
+        return Alamofire.download(self.url + "/v3/signatures/" + signatureId + "/documents/" + documentId + "/download/signed", headers: self.headers, to: path)
     }
 
     /// Create a signature request.
-    public func createSignature(files: [NSURL], recipients: [Dictionary<String, String>], params: Dictionary<String, AnyObject>? = [String: AnyObject](), successHandler: Response<AnyObject, NSError> -> Void) {
-        return Alamofire.upload(.POST, self.url + "/v3/signatures.json", headers: self.headers, multipartFormData: { multipartFormData in
-            for (index, recipient) in recipients.enumerate() {
+    public func createSignature(files: [URL], recipients: [Dictionary<String, String>], params: Dictionary<String, AnyObject>? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
+        return Alamofire.upload(multipartFormData: { multipartFormData in
+            for (index, recipient) in recipients.enumerated() {
                 for (field, value) in recipient {
-                    multipartFormData.appendBodyPart(
-                        data: value.dataUsingEncoding(NSUTF8StringEncoding)!,
-                        name: "recipients[\(index)][\(field)]"
+                    multipartFormData.append(
+                        value.data(using: String.Encoding.utf8)!,
+                        withName: "recipients[\(index)][\(field)]"
                     )
                 }
             }
 
             for file in files {
-                multipartFormData.appendBodyPart(
-                    fileURL: file,
-                    name: "files[]"
+                multipartFormData.append(
+                    try! Data(contentsOf: file),
+                    withName: "files[]",
+                    fileName: file.lastPathComponent,
+                    mimeType: "application/octet-stream"
                 )
             }
-
+            
             if params != nil {
                 for (field, value) in params! {
-                    multipartFormData.appendBodyPart(
-                        data: value.dataUsingEncoding(NSUTF8StringEncoding)!,
-                        name: String(field)
+                    multipartFormData.append(
+                        value.data(using: String.Encoding.utf8.rawValue)!,
+                        withName: String(field)
                     )
                 }
             }
-        }, encodingCompletion: { encodingResult in
+        }, to: "\(self.url)/v3/signatures.json", headers: self.headers, encodingCompletion: { encodingResult in
             switch encodingResult {
-                case .Success(let upload, _, _):
+                case .success(let upload, _, _):
                     upload.responseJSON(completionHandler: successHandler)
 
-                case .Failure(let encodingError):
+                case .failure(let encodingError):
                     print(encodingError)
             }
         })
@@ -106,236 +109,244 @@ public class Signaturit {
 
     /// Cancel a signature request.
     public func cancelSignature(signatureId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.PATCH, "\(self.url)/v3/signatures/\(signatureId)/cancel.json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/signatures/\(signatureId)/cancel.json", method: .patch, headers: self.headers)
     }
 
     /// Send signature reminder.
     public func sendSignatureReminder(signatureId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.POST, "\(self.url)/v3/signatures/\(signatureId)/reminder.json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/signatures/\(signatureId)/reminder.json", method: .post, headers: self.headers)
     }
 
     // MARK: - Branding
 
     /// Create a branding.
     public func createBranding(params: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.POST, "\(self.url)/v3/brandings.json", headers: self.headers, parameters: params)
+        return Alamofire.request("\(self.url)/v3/brandings.json", method: .post, parameters: params, headers: self.headers)
     }
 
     /// Update a branding.
     public func updateBranding(brandingId: String, params: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.PATCH, "\(self.url)/v3/brandings/\(brandingId).json", headers: self.headers, parameters: params)
+        return Alamofire.request("\(self.url)/v3/brandings/\(brandingId).json", method: .patch, parameters: params, headers: self.headers)
     }
 
     // MARK: - Template
 
     /// Get templates
     public func getTemplates() -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/templates.json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/templates.json", headers: self.headers)
     }
 
     // MARK: - Emails
 
     /// Get emails information.
-    public func getEmails(limit: Int?, offset: Int?, var conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        conditions!["limit"]  = limit
-        conditions!["offset"] = offset
+    public func getEmails(limit: Int?, offset: Int?, conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
+        var conditions = conditions
+        conditions!["limit"]  = limit as AnyObject
+        conditions!["offset"] = offset as AnyObject
 
-        return getEmails(conditions!)
+        return getEmails(conditions: conditions!)
     }
 
     /// Get emails information.
     public func getEmails(conditions: [String: AnyObject] = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/emails.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/emails.json", parameters: conditions, headers: self.headers)
     }
 
     /// Count emails.
     public func countEmails(conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/emails/count.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/emails/count.json", parameters: conditions, headers: self.headers)
     }
 
     /// Get email information.
     public func getEmail(emailId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/emails/\(emailId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/emails/\(emailId).json", headers: self.headers)
     }
 
     /// Get email certificates information.
     public func getEmailCertificates(emailId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/emails/\(emailId)/certificates.json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/emails/\(emailId)/certificates.json", headers: self.headers)
     }
 
     /// Get email certificate information.
     public func getEmailCertificate(emailId: String, certificateId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/emails/\(emailId)/certificates/\(certificateId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/emails/\(emailId)/certificates/\(certificateId).json", headers: self.headers)
     }
 
     /// Create a email.
-    public func createEmail(files: [NSURL], recipients: [Dictionary<String, String>], subject: String?, body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: Response<AnyObject, NSError>? -> Void) {
-        return Alamofire.upload(.POST, self.url + "/v3/emails.json", headers: self.headers, multipartFormData: { multipartFormData in
+    public func createEmail(files: [URL], recipients: [Dictionary<String, String>], subject: String?, body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
+        return Alamofire.upload(multipartFormData: { multipartFormData in
             if subject != nil {
-                multipartFormData.appendBodyPart(
-                    data: subject!.dataUsingEncoding(NSUTF8StringEncoding)!,
-                    name: "subject"
+                multipartFormData.append(
+                    subject!.data(using: String.Encoding.utf8)!,
+                    withName: "subject"
                 )
             }
 
             if body != nil {
-                multipartFormData.appendBodyPart(
-                    data: body!.dataUsingEncoding(NSUTF8StringEncoding)!,
-                    name: "body"
+                multipartFormData.append(
+                    body!.data(using: String.Encoding.utf8)!,
+                    withName: "body"
                 )
             }
 
-            for (index, recipient) in recipients.enumerate() {
+            for (index, recipient) in recipients.enumerated() {
                 for (field, value) in recipient {
-                    multipartFormData.appendBodyPart(
-                        data: value.dataUsingEncoding(NSUTF8StringEncoding)!,
-                        name: "recipients[\(index)][\(field)]"
+                    multipartFormData.append(
+                        value.data(using: String.Encoding.utf8)!,
+                        withName: "recipients[\(index)][\(field)]"
                     )
                 }
             }
 
             for file in files {
-                multipartFormData.appendBodyPart(
-                    fileURL: file,
-                    name: "files[]"
+                multipartFormData.append(
+                    try! Data(contentsOf: file),
+                    withName: "files[]",
+                    fileName: file.lastPathComponent,
+                    mimeType: "application/octet-stream"
                 )
             }
 
             if params != nil {
                 for (field, value) in params! {
-                    multipartFormData.appendBodyPart(
-                        data: value.dataUsingEncoding(NSUTF8StringEncoding)!,
-                        name: String(field)
+                    multipartFormData.append(
+                        value.data(using: String.Encoding.utf8.rawValue)!,
+                        withName: String(field)
                     )
                 }
             }
-        }, encodingCompletion: { encodingResult in
+        }, to: self.url + "/v3/emails.json", headers: self.headers, encodingCompletion: { encodingResult in
             switch encodingResult {
-                case .Success(let upload, _, _):
+                case .success(let upload, _, _):
                     upload.responseJSON(completionHandler: successHandler)
 
-                case .Failure(let encodingError):
+                case .failure(let encodingError):
                     print(encodingError)
             }
         })
     }
 
     /// Download the audit trail.
-    public func downloadEmailAuditTrail(emailId: String, certificateId: String, path: Request.DownloadFileDestination) -> Request {
-        return Alamofire.download(Alamofire.Method.GET, self.url + "/v3/emails/" + emailId + "/certificates/" + certificateId + "/download/audit_trail", headers: self.headers, destination: path)
+    public func downloadEmailAuditTrail(emailId: String, certificateId: String, path: DownloadRequest.DownloadFileDestination?) -> Request {
+        return Alamofire.download(self.url + "/v3/emails/" + emailId + "/certificates/" + certificateId + "/download/audit_trail", headers: self.headers, to: path)
     }
 
     /// Download the email document.
-    public func downloadEmailDocument(emailId: String, certificateId: String, path: Request.DownloadFileDestination) -> Request {
-        return Alamofire.download(Alamofire.Method.GET, self.url + "/v3/emails/" + emailId + "/certificates/" + certificateId + "/download/original", headers: self.headers, destination: path)
+    public func downloadEmailDocument(emailId: String, certificateId: String, path: DownloadRequest.DownloadFileDestination?) -> Request {
+        return Alamofire.download(self.url + "/v3/emails/" + emailId + "/certificates/" + certificateId + "/download/original", headers: self.headers, to: path)
     }
 
     // MARK: - SMS
 
     /// Get sms information.
-    public func getSMS(limit: Int?, offset: Int?, var conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        conditions!["limit"]  = limit
-        conditions!["offset"] = offset
+    public func getSMS(limit: Int?, offset: Int?, conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
+        var conditions = conditions
+        conditions!["limit"]  = limit as AnyObject
+        conditions!["offset"] = offset as AnyObject
         
-        return getSMS(conditions!)
+        return getSMS(conditions: conditions!)
     }
     
     /// Get sms information.
     public func getSMS(conditions: [String: AnyObject] = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/sms.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/sms.json", parameters: conditions, headers: self.headers)
     }
     
     /// Count sms.
     public func countSMS(conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/sms/count.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/sms/count.json", parameters: conditions, headers: self.headers)
     }
     
     /// Get sms information.
     public func getSingleSMS(smsId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/sms/\(smsId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/sms/\(smsId).json", method: .get, headers: self.headers)
     }
     
     /// Create an sms.
-    public func createSMS(files: [NSURL], recipients: [Dictionary<String, String>], body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: Response<AnyObject, NSError>? -> Void) {
-        return Alamofire.upload(.POST, self.url + "/v3/sms.json", headers: self.headers, multipartFormData: { multipartFormData in
+    public func createSMS(files: [URL], recipients: [Dictionary<String, String>], body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
+        return Alamofire.upload(multipartFormData: { multipartFormData in
             if body != nil {
-                multipartFormData.appendBodyPart(
-                    data: body!.dataUsingEncoding(NSUTF8StringEncoding)!,
-                    name: "body"
+                multipartFormData.append(
+                    body!.data(using: String.Encoding.utf8)!,
+                    withName: "body"
                 )
             }
             
-            for (index, recipient) in recipients.enumerate() {
+            for (index, recipient) in recipients.enumerated() {
                 for (field, value) in recipient {
-                    multipartFormData.appendBodyPart(
-                        data: value.dataUsingEncoding(NSUTF8StringEncoding)!,
-                        name: "recipients[\(index)][\(field)]"
+                    multipartFormData.append(
+                        value.data(using: String.Encoding.utf8)!,
+                        withName: "recipients[\(index)][\(field)]"
                     )
                 }
             }
             
             for file in files {
-                multipartFormData.appendBodyPart(
-                    fileURL: file,
-                    name: "files[]"
+                multipartFormData.append(
+                    try! Data(contentsOf: file),
+                    withName: "files[]",
+                    fileName: file.lastPathComponent,
+                    mimeType: "application/octet-stream"
                 )
             }
-            
+
             if params != nil {
                 for (field, value) in params! {
-                    multipartFormData.appendBodyPart(
-                        data: value.dataUsingEncoding(NSUTF8StringEncoding)!,
-                        name: String(field)
+                    multipartFormData.append(
+                        value.data(using: String.Encoding.utf8.rawValue)!,
+                        withName: String(field)
                     )
                 }
             }
-            }, encodingCompletion: { encodingResult in
+        }, to: self.url + "/v3/sms.json", headers: self.headers, encodingCompletion: { encodingResult in
                 switch encodingResult {
-                case .Success(let upload, _, _):
+                case .success(let upload, _, _):
                     upload.responseJSON(completionHandler: successHandler)
                     
-                case .Failure(let encodingError):
+                case .failure(let encodingError):
                     print(encodingError)
                 }
         })
     }
     
     /// Download the audit trail.
-    public func downloadSMSAuditTrail(smsId: String, certificateId: String, path: Request.DownloadFileDestination) -> Request {
-        return Alamofire.download(Alamofire.Method.GET, self.url + "/v3/sms/" + smsId + "/certificates/" + certificateId + "/download/audit_trail", headers: self.headers, destination: path)
+    public func downloadSMSAuditTrail(smsId: String, certificateId: String, path: DownloadRequest.DownloadFileDestination?) -> Request {
+        return Alamofire.download(self.url + "/v3/sms/" + smsId + "/certificates/" + certificateId + "/download/audit_trail", headers: self.headers, to: path)
     }
 
     // MARK: - Team
 
     /// Get users information.
-    public func getUsers(limit: Int?, offset: Int?, var conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        conditions!["limit"]  = limit
-        conditions!["offset"] = offset
+    public func getUsers(limit: Int?, offset: Int?, conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
+        var conditions = conditions
+        conditions!["limit"]  = limit as AnyObject
+        conditions!["offset"] = offset as AnyObject
         
-        return getUsers(conditions!)
+        return getUsers(conditions: conditions!)
     }
 
     /// Get users information.
     public func getUsers(conditions: [String: AnyObject] = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/team/users.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/team/users.json", parameters: conditions, headers: self.headers)
     }
 
     /// Get seats information.
-    public func getSeats(limit: Int?, offset: Int?, var conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        conditions!["limit"]  = limit
-        conditions!["offset"] = offset
+    public func getSeats(limit: Int?, offset: Int?, conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
+        var conditions = conditions
+        conditions!["limit"]  = limit as AnyObject
+        conditions!["offset"] = offset as AnyObject
         
-        return getSeats(conditions!)
+        return getSeats(conditions: conditions!)
     }
     
     /// Get seats information.
     public func getSeats(conditions: [String: AnyObject] = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/team/seats.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/team/seats.json", parameters: conditions, headers: self.headers)
     }
 
     /// Get user information.
     public func getUser(userId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/team/users/\(userId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/team/users/\(userId).json", method: .get, headers: self.headers)
     }
 
     /// Invite a user.
@@ -345,44 +356,45 @@ public class Signaturit {
             "role": role
         ]
 
-        return Alamofire.request(Alamofire.Method.POST, "\(self.url)/v3/team/users.json", headers: self.headers, parameters: params)
+        return Alamofire.request("\(self.url)/v3/team/users.json", method: .post, parameters: params, headers: self.headers)
     }
     
     /// Update user role.
     public func changeUserRole(userId: String, role: String) -> Request {
         let params: [String: String] = ["role": role]
 
-        return Alamofire.request(Alamofire.Method.PATCH, "\(self.url)/v3/team/users/\(userId).json", headers: self.headers, parameters: params)
+        return Alamofire.request("\(self.url)/v3/team/users/\(userId).json", method: .patch, parameters: params, headers: self.headers)
     }
 
     /// Remove a user from the team.
     public func removeUser(userId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.DELETE, "\(self.url)/v3/team/users/\(userId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/team/users/\(userId).json", method: .delete, headers: self.headers)
     }
 
     /// Remove a seat from the team.
     public func removeSeat(seatId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.DELETE, "\(self.url)/v3/team/seats/\(seatId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/team/seats/\(seatId).json", method: .delete, headers: self.headers)
     }
 
     // MARK: - Groups
 
     /// Get groups information.
-    public func getGroups(limit: Int?, offset: Int?, var conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        conditions!["limit"]  = limit
-        conditions!["offset"] = offset
+    public func getGroups(limit: Int?, offset: Int?, conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
+        var conditions = conditions
+        conditions!["limit"]  = limit as AnyObject
+        conditions!["offset"] = offset as AnyObject
         
-        return getGroups(conditions!)
+        return getGroups(conditions: conditions!)
     }
     
     /// Get groups information.
     public func getGroups(conditions: [String: AnyObject] = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/team/groups.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/team/groups.json", parameters: conditions, headers: self.headers)
     }
 
     /// Get group information.
     public func getGroup(groupId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/team/groups/\(groupId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/team/groups/\(groupId).json", method: .get, headers: self.headers)
     }
 
     /// Create a group.
@@ -391,59 +403,60 @@ public class Signaturit {
             "name": name
         ]
         
-        return Alamofire.request(Alamofire.Method.POST, "\(self.url)/v3/team/groups.json", headers: self.headers, parameters: params)
+        return Alamofire.request("\(self.url)/v3/team/groups.json", method: .post, parameters: params, headers: self.headers)
     }
 
     /// Update a group.
     public func updateGroup(groupId: String, name: String) -> Request {
         let params: [String: String] = ["name": name]
         
-        return Alamofire.request(Alamofire.Method.PATCH, "\(self.url)/v3/team/groups/\(groupId).json", headers: self.headers, parameters: params)
+        return Alamofire.request("\(self.url)/v3/team/groups/\(groupId).json", method: .patch, parameters: params, headers: self.headers)
     }
 
     /// Remove a group.
     public func deleteGroup(groupId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.DELETE, "\(self.url)/v3/team/groups/\(groupId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/team/groups/\(groupId).json", method: .delete, headers: self.headers)
     }
 
     /// Add a manager to a group.
     public func addManagerToGroup(groupId: String, userId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.POST, "\(self.url)/v3/team/groups/\(groupId)/managers/\(userId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/team/groups/\(groupId)/managers/\(userId).json", method: .post, headers: self.headers)
     }
 
     /// Add a member to a group.
     public func addMemberToGroup(groupId: String, userId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.POST, "\(self.url)/v3/team/groups/\(groupId)/members/\(userId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/team/groups/\(groupId)/members/\(userId).json", method: .post, headers: self.headers)
     }
 
     /// Remove a manager to a group.
     public func removeManagerFromGroup(groupId: String, userId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.DELETE, "\(self.url)/v3/team/groups/\(groupId)/managers/\(userId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/team/groups/\(groupId)/managers/\(userId).json", method: .delete, headers: self.headers)
     }
     
     /// Remove a member to a group.
     public func removeMemberFromGroup(groupId: String, userId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.DELETE, "\(self.url)/v3/team/groups/\(groupId)/members/\(userId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/team/groups/\(groupId)/members/\(userId).json", method: .delete, headers: self.headers)
     }
 
     // MARK: - Contacts
 
     /// Get contacts information.
-    public func getContacts(limit: Int?, offset: Int?, var conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        conditions!["limit"]  = limit
-        conditions!["offset"] = offset
+    public func getContacts(limit: Int?, offset: Int?, conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
+        var conditions = conditions
+        conditions!["limit"]  = limit as AnyObject
+        conditions!["offset"] = offset as AnyObject
         
-        return getContacts(conditions!)
+        return getContacts(conditions: conditions!)
     }
     
     /// Get contacts information.
     public func getContacts(conditions: [String: AnyObject] = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/contacts.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/contacts.json", parameters: conditions, headers: self.headers)
     }
     
     /// Get contact information.
     public func getContact(contactId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/contacts/\(contactId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/contacts/\(contactId).json", method: .get, headers: self.headers)
     }
     
     /// Create a contact.
@@ -453,7 +466,7 @@ public class Signaturit {
             "name": name
         ]
         
-        return Alamofire.request(Alamofire.Method.POST, "\(self.url)/v3/contacts.json", headers: self.headers, parameters: params)
+        return Alamofire.request("\(self.url)/v3/contacts.json", method: .post, parameters: params, headers: self.headers)
     }
     
     /// Update a contact.
@@ -463,61 +476,62 @@ public class Signaturit {
             "name": name
         ]
         
-        return Alamofire.request(Alamofire.Method.PATCH, "\(self.url)/v3/contacts/\(contactId).json", headers: self.headers, parameters: params)
+        return Alamofire.request("\(self.url)/v3/contacts/\(contactId).json", method: .patch, parameters: params, headers: self.headers)
     }
     
     /// Remove a contact.
     public func deleteContact(contactId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.DELETE, "\(self.url)/v3/contacts/\(contactId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/contacts/\(contactId).json", method: .delete, headers: self.headers)
     }
 
     // MARK: - Subscriptions
     
     /// Get subscriptions information.
-    public func getSubscriptions(limit: Int?, offset: Int?, var conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        conditions!["limit"]  = limit
-        conditions!["offset"] = offset
+    public func getSubscriptions(limit: Int?, offset: Int?, conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
+        var conditions = conditions
+        conditions!["limit"]  = limit as AnyObject
+        conditions!["offset"] = offset as AnyObject
         
-        return getSubscriptions(conditions!)
+        return getSubscriptions(conditions: conditions!)
     }
     
     /// Get subscriptions information.
     public func getSubscriptions(conditions: [String: AnyObject] = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/subscriptions.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/subscriptions.json", parameters: conditions, headers: self.headers)
     }
 
     /// Get subscriptions count.
     public func countSubscriptions(conditions: [String: AnyObject]? = [String: AnyObject]()) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/subscriptions/count.json", headers: self.headers, parameters: conditions)
+        return Alamofire.request("\(self.url)/v3/subscriptions/count.json", parameters: conditions, headers: self.headers)
     }
 
     /// Get subscription information.
     public func getSubscription(subscriptionId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.GET, "\(self.url)/v3/subscriptions/\(subscriptionId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/subscriptions/\(subscriptionId).json", method: .get, headers: self.headers)
     }
     
     /// Create a subscription.
     public func createSubscription(url: String, events: [String]) -> Request {
         let params: [String: AnyObject] = [
-            "url": url,
-            "events": events
+            "url": url as AnyObject,
+            "events": events as AnyObject
         ]
         
-        return Alamofire.request(Alamofire.Method.POST, "\(self.url)/v3/subscriptions.json", headers: self.headers, parameters: params)
+        return Alamofire.request("\(self.url)/v3/subscriptions.json", method: .post, parameters: params, headers: self.headers)
     }
     
     /// Update a subscription.
     public func updateSubscription(subscriptionId: String, url: String, events: [String]) -> Request {
         let params: [String: AnyObject] = [
-            "url": url,
-            "events": events
+            "url": url as AnyObject,
+            "events": events as AnyObject
         ]
         
-        return Alamofire.request(Alamofire.Method.PATCH, "\(self.url)/v3/subscriptions/\(subscriptionId).json", headers: self.headers, parameters: params)
+        return Alamofire.request("\(self.url)/v3/subscriptions/\(subscriptionId).json", method: .patch, parameters: params, headers: self.headers)
     }
     
     /// Remove a subscription.
     public func deleteSubscription(subscriptionId: String) -> Request {
-        return Alamofire.request(Alamofire.Method.DELETE, "\(self.url)/v3/subscriptions/\(subscriptionId).json", headers: self.headers)
+        return Alamofire.request("\(self.url)/v3/subscriptions/\(subscriptionId).json", method: .delete, headers: self.headers)
     }
 }

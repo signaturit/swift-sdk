@@ -1,22 +1,22 @@
 PODS:
-  - Alamofire (3.5.1)
-  - Signaturit (1.0.0):
-    - Alamofire (~> 3.5)
-  - SwiftyJSON (2.4.0)
+  - Alamofire (4.6.0)
+  - Signaturit (1.1.0):
+    - Alamofire (~> 4.5)
+  - SwiftyJSON (4.0.0)
 
 DEPENDENCIES:
   - Signaturit (from `../`)
-  - SwiftyJSON (~> 2.4)
+  - SwiftyJSON (~> 4.0)
 
 EXTERNAL SOURCES:
   Signaturit:
     :path: ../
 
 SPEC CHECKSUMS:
-  Alamofire: 0dfba1184a543e2aa160f4e39cac4e8aba48d223
-  Signaturit: 3588b2496e068d238e8597d5cc9ed6c1781e9ae4
-  SwiftyJSON: 96918c1bf505efa50c4f72957018dd3452090c9c
+  Alamofire: f41a599bd63041760b26d393ec1069d9d7b917f4
+  Signaturit: cd5f30ad63777196a46feb31eb6823f119814d09
+  SwiftyJSON: 070dabdcb1beb81b247c65ffa3a79dbbfb3b48aa
 
-PODFILE CHECKSUM: fc879707ad17606e3def7c45d33cb03ffa71b24e
+PODFILE CHECKSUM: 89c9ec1fd779a4df043940ed7555c7d91d19208c
 
-COCOAPODS: 1.1.1
+COCOAPODS: 1.4.0

@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Signaturit'
-  s.version          = '1.1.0'
+  s.version          = '1.2.0'
   s.license          = { :type => 'MIT' }
   s.summary          = 'Signaturit Swift SDK'
 
@@ -13,5 +13,5 @@ Pod::Spec.new do |s|
 
   s.source_files = '*'
 
-  s.dependency 'Alamofire', '~> 3.5'
+  s.dependency 'Alamofire', '~> 4.5'
 end
