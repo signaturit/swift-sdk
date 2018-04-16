@@ -26,7 +26,7 @@ open class Signaturit {
 
         self.headers = [
             "Authorization": "Bearer " + accessToken,
-            "user-agent": "signaturit-swift-sdk 1.2.0"
+            "user-agent": "signaturit-swift-sdk 1.2.1"
         ]
     }
 
@@ -67,16 +67,9 @@ open class Signaturit {
     }
 
     /// Create a signature request.
-    open func createSignature(files: [URL], recipients: [Dictionary<String, String>], params: Dictionary<String, AnyObject>? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
+    open func createSignature(files: [URL], recipients: [[String : Any]], params: [String : AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
         return Alamofire.upload(multipartFormData: { multipartFormData in
-            for (index, recipient) in recipients.enumerated() {
-                for (field, value) in recipient {
-                    multipartFormData.append(
-                        value.data(using: String.Encoding.utf8)!,
-                        withName: "recipients[\(index)][\(field)]"
-                    )
-                }
-            }
+            Signaturit.parseTo(multipartData: multipartFormData, currentKey: "recipients", currentValue: recipients)
 
             for file in files {
                 multipartFormData.append(
@@ -172,7 +165,7 @@ open class Signaturit {
     }
 
     /// Create a email.
-    open func createEmail(files: [URL], recipients: [Dictionary<String, String>], subject: String?, body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
+    open func createEmail(files: [URL], recipients: [[String : Any]], subject: String?, body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
         return Alamofire.upload(multipartFormData: { multipartFormData in
             if subject != nil {
                 multipartFormData.append(
@@ -188,14 +181,7 @@ open class Signaturit {
                 )
             }
 
-            for (index, recipient) in recipients.enumerated() {
-                for (field, value) in recipient {
-                    multipartFormData.append(
-                        value.data(using: String.Encoding.utf8)!,
-                        withName: "recipients[\(index)][\(field)]"
-                    )
-                }
-            }
+            Signaturit.parseTo(multipartData: multipartFormData, currentKey: "recipients", currentValue: recipients)
 
             for file in files {
                 multipartFormData.append(
@@ -262,7 +248,7 @@ open class Signaturit {
     }
     
     /// Create an sms.
-    open func createSMS(files: [URL], recipients: [Dictionary<String, String>], body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
+    open func createSMS(files: [URL], recipients: [[String : Any]], body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
         return Alamofire.upload(multipartFormData: { multipartFormData in
             if body != nil {
                 multipartFormData.append(
@@ -270,16 +256,9 @@ open class Signaturit {
                     withName: "body"
                 )
             }
-            
-            for (index, recipient) in recipients.enumerated() {
-                for (field, value) in recipient {
-                    multipartFormData.append(
-                        value.data(using: String.Encoding.utf8)!,
-                        withName: "recipients[\(index)][\(field)]"
-                    )
-                }
-            }
-            
+
+            Signaturit.parseTo(multipartData: multipartFormData, currentKey: "recipients", currentValue: recipients)
+
             for file in files {
                 multipartFormData.append(
                     try! Data(contentsOf: file),
@@ -532,5 +511,27 @@ open class Signaturit {
     /// Remove a subscription.
     open func deleteSubscription(subscriptionId: String) -> DataRequest {
         return Alamofire.request("\(self.url)/v3/subscriptions/\(subscriptionId).json", method: .delete, headers: self.headers)
+    }
+}
+
+extension Signaturit {
+    // inout
+    public static func parseTo(multipartData: MultipartFormData, currentKey: String, currentValue: Any) {
+        if let arrayAny: [Any] = currentValue as? [Any] {
+            for (index, element) in arrayAny.enumerated() {
+                self.parseTo(multipartData: multipartData, currentKey: currentKey + "[\(index)]", currentValue: element)
+            }
+        } else if let dicAny: [String: Any] = currentValue as? [String: Any] {
+            for (field, value) in dicAny {
+                self.parseTo(multipartData: multipartData, currentKey: currentKey + "[\(field)]", currentValue: value)
+            }
+        } else {
+            if let data: Data = "\(currentValue)".data(using: String.Encoding.utf8) {
+                multipartData.append(
+                    data,
+                    withName: currentKey // "recipients[\(index)][\(field)]"
+                )
+            }
+        }
     }
 }
