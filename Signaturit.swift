@@ -26,7 +26,7 @@ public class Signaturit {
 
         self.headers = [
             "Authorization": "Bearer " + accessToken,
-            "user-agent": "signaturit-swift-sdk 1.2.0"
+            "user-agent": "signaturit-swift-sdk 1.2.1"
         ]
     }
 
@@ -69,32 +69,11 @@ public class Signaturit {
     /// Create a signature request.
     public func createSignature(files: [URL], recipients: [Dictionary<String, String>], params: Dictionary<String, AnyObject>? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
         return Alamofire.upload(multipartFormData: { multipartFormData in
-            for (index, recipient) in recipients.enumerated() {
-                for (field, value) in recipient {
-                    multipartFormData.append(
-                        value.data(using: String.Encoding.utf8)!,
-                        withName: "recipients[\(index)][\(field)]"
-                    )
-                }
-            }
+            self.addRecipients(multipartFormData: multipartFormData, currentKey: "recipients", currentValue: recipients)
 
-            for file in files {
-                multipartFormData.append(
-                    try! Data(contentsOf: file),
-                    withName: "files[]",
-                    fileName: file.lastPathComponent,
-                    mimeType: "application/octet-stream"
-                )
-            }
-            
-            if params != nil {
-                for (field, value) in params! {
-                    multipartFormData.append(
-                        value.data(using: String.Encoding.utf8.rawValue)!,
-                        withName: String(field)
-                    )
-                }
-            }
+            self.addFiles(multipartFormData: multipartFormData, files: files, currentKey: "files")
+
+            self.addParams(multipartFormData: multipartFormData, params: params)
         }, to: "\(self.url)/v3/signatures.json", headers: self.headers, encodingCompletion: { encodingResult in
             switch encodingResult {
                 case .success(let upload, _, _):
@@ -188,32 +167,11 @@ public class Signaturit {
                 )
             }
 
-            for (index, recipient) in recipients.enumerated() {
-                for (field, value) in recipient {
-                    multipartFormData.append(
-                        value.data(using: String.Encoding.utf8)!,
-                        withName: "recipients[\(index)][\(field)]"
-                    )
-                }
-            }
+            self.addRecipients(multipartFormData: multipartFormData, currentKey: "recipients", currentValue: recipients)
 
-            for file in files {
-                multipartFormData.append(
-                    try! Data(contentsOf: file),
-                    withName: "files[]",
-                    fileName: file.lastPathComponent,
-                    mimeType: "application/octet-stream"
-                )
-            }
+            self.addFiles(multipartFormData: multipartFormData, files: files, currentKey: "attachments")
 
-            if params != nil {
-                for (field, value) in params! {
-                    multipartFormData.append(
-                        value.data(using: String.Encoding.utf8.rawValue)!,
-                        withName: String(field)
-                    )
-                }
-            }
+            self.addParams(multipartFormData: multipartFormData, params: params!)
         }, to: "\(self.url)/v3/emails.json", headers: self.headers, encodingCompletion: { encodingResult in
             switch encodingResult {
                 case .success(let upload, _, _):
@@ -271,32 +229,11 @@ public class Signaturit {
                 )
             }
             
-            for (index, recipient) in recipients.enumerated() {
-                for (field, value) in recipient {
-                    multipartFormData.append(
-                        value.data(using: String.Encoding.utf8)!,
-                        withName: "recipients[\(index)][\(field)]"
-                    )
-                }
-            }
+            self.addRecipients(multipartFormData: multipartFormData, currentKey: "recipients", currentValue: recipients)
             
-            for file in files {
-                multipartFormData.append(
-                    try! Data(contentsOf: file),
-                    withName: "files[]",
-                    fileName: file.lastPathComponent,
-                    mimeType: "application/octet-stream"
-                )
-            }
+            self.addFiles(multipartFormData: multipartFormData, files: files, currentKey: "attachments")
 
-            if params != nil {
-                for (field, value) in params! {
-                    multipartFormData.append(
-                        value.data(using: String.Encoding.utf8.rawValue)!,
-                        withName: String(field)
-                    )
-                }
-            }
+            self.addParams(multipartFormData: multipartFormData, params: params!)
         }, to: "\(self.url)/v3/sms.json", headers: self.headers, encodingCompletion: { encodingResult in
                 switch encodingResult {
                 case .success(let upload, _, _):
@@ -532,5 +469,49 @@ public class Signaturit {
     /// Remove a subscription.
     public func deleteSubscription(subscriptionId: String) -> DataRequest {
         return Alamofire.request("\(self.url)/v3/subscriptions/\(subscriptionId).json", method: .delete, headers: self.headers)
+    }
+
+    // Add recipients in multipart form data object
+    private func addRecipients(multipartFormData: MultipartFormData, currentKey: String, currentValue: Any) {
+        if let arrayAny: [Any] = currentValue as? [Any] {
+            for (index, element) in arrayAny.enumerated() {
+                self.addRecipients(multipartFormData: multipartFormData, currentKey: currentKey + "[\(index)]", currentValue: element)
+            }
+        } else if let dicAny: [String: Any] = currentValue as? [String: Any] {
+            for (field, value) in dicAny {
+                self.addRecipients(multipartFormData: multipartFormData, currentKey: currentKey + "[\(field)]", currentValue: value)
+            }
+        } else {
+            if let data: Data = "\(currentValue)".data(using: String.Encoding.utf8) {
+                multipartFormData.append(
+                    data,
+                    withName: currentKey
+                )
+            }
+        }
+    }
+    
+    // Add files in multipart form data object
+    private func addFiles(multipartFormData: MultipartFormData, files: [URL], currentKey: String) {
+        for file in files {
+            multipartFormData.append(
+                try! Data(contentsOf: file),
+                withName: "\(currentKey)[]",
+                fileName: file.lastPathComponent,
+                mimeType: "application/octet-stream"
+            )
+        }
+    }
+    
+    // Add params in multipart form data object
+    private func addParams(multipartFormData: MultipartFormData, params: Dictionary<String, AnyObject>?) {
+        if (params != nil) {
+            for (field, value) in params! {
+                multipartFormData.append(
+                    value.data(using: String.Encoding.utf8.rawValue)!,
+                    withName: String(field)
+                )
+            }
+        }
     }
 }
