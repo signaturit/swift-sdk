@@ -8,10 +8,11 @@ Pod::Spec.new do |s|
   s.author           = { 'Signaturit' => 'api@signaturit.com' }
   s.source           = { :git => 'https://github.com/signaturit/swift-sdk.git', :tag => s.version.to_s }
 
-  s.platform     = :ios, '8.0'
-  s.requires_arc = true
+  s.swift_version = '3.3'
+  s.platform      = :ios, '8.0'
+  s.requires_arc  = true
 
   s.source_files = '*'
 
-  s.dependency 'Alamofire', '~> 4.5'
+  s.dependency 'Alamofire', '~> 4.7'
 end
