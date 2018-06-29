@@ -26,7 +26,7 @@ public class Signaturit {
 
         self.headers = [
             "Authorization": "Bearer " + accessToken,
-            "user-agent": "signaturit-swift-sdk 1.2.2"
+            "user-agent": "signaturit-swift-sdk 1.2.3"
         ]
     }
 
@@ -67,7 +67,7 @@ public class Signaturit {
     }
 
     /// Create a signature request.
-    public func createSignature(files: [URL], recipients: [Dictionary<String, String>], params: Dictionary<String, AnyObject>? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
+    public func createSignature(files: [URL], recipients: [Dictionary<String, Any>], params: Dictionary<String, AnyObject>? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
         return Alamofire.upload(multipartFormData: { multipartFormData in
             self.addRecipients(multipartFormData: multipartFormData, currentKey: "recipients", currentValue: recipients)
 
@@ -151,7 +151,7 @@ public class Signaturit {
     }
 
     /// Create a email.
-    public func createEmail(files: [URL], recipients: [Dictionary<String, String>], subject: String?, body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
+    public func createEmail(files: [URL], recipients: [Dictionary<String, Any>], subject: String?, body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
         return Alamofire.upload(multipartFormData: { multipartFormData in
             if subject != nil {
                 multipartFormData.append(
@@ -220,7 +220,7 @@ public class Signaturit {
     }
     
     /// Create an sms.
-    public func createSMS(files: [URL], recipients: [Dictionary<String, String>], body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
+    public func createSMS(files: [URL], recipients: [Dictionary<String, Any>], body: String?, params: [String: AnyObject]? = [String: AnyObject](), successHandler: @escaping (DataResponse<Any>) -> Void) {
         return Alamofire.upload(multipartFormData: { multipartFormData in
             if body != nil {
                 multipartFormData.append(

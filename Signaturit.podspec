@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Signaturit'
-  s.version          = '1.2.2'
+  s.version          = '1.2.3'
   s.license          = { :type => 'MIT' }
   s.summary          = 'Signaturit Swift SDK'
 
