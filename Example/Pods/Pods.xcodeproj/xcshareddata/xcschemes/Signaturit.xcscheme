@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0930"
+   LastUpgradeVersion = "1020"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "81BFFCAFF4AF1EEBDCDB3DADF703B316"
+               BlueprintIdentifier = "D3685E0C6A104AA831EFCF42C338ECD6"
                BuildableName = "Signaturit.framework"
                BlueprintName = "Signaturit"
                ReferencedContainer = "container:Pods.xcodeproj">
@@ -45,7 +45,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "81BFFCAFF4AF1EEBDCDB3DADF703B316"
+            BlueprintIdentifier = "D3685E0C6A104AA831EFCF42C338ECD6"
             BuildableName = "Signaturit.framework"
             BlueprintName = "Signaturit"
             ReferencedContainer = "container:Pods.xcodeproj">

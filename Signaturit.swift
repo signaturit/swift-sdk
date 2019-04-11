@@ -26,7 +26,7 @@ public class Signaturit {
 
         self.headers = [
             "Authorization": "Bearer " + accessToken,
-            "user-agent": "signaturit-swift-sdk 1.2.3"
+            "user-agent": "signaturit-swift-sdk 1.3.0"
         ]
     }
 
